@@ -1,33 +1,50 @@
+import { API_URL } from "@/config";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Link, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { Text, View, TouchableOpacity } from "react-native";
-import { Link, useRouter, router } from "expo-router";
+import { Text, TouchableOpacity, View } from "react-native";
 
 export default function Home() {
   const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
     const loadProfile = async () => {
-      const token = await AsyncStorage.getItem("token");
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const token = await AsyncStorage.getItem("token");
 
-      if (!token) {
-        router.replace("/login");
-        return;
+        if (!token) {
+          router.replace("/login");
+          return;
+        }
+
+        const res = await fetch(`${API_URL}/volunteers/profile`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!res.ok) {
+          throw new Error(`API error: ${res.status}`);
+        }
+
+        const data = await res.json();
+        setUser(data.profile);
+      } catch (err) {
+        console.error("Profile load error:", err);
+        setError(err instanceof Error ? err.message : "Failed to load profile");
+      } finally {
+        setLoading(false);
       }
-
-      const res = await fetch("http://localhost:5000/api/volunteers/profile", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const data = await res.json();
-      setUser(data.profile);
     };
 
     loadProfile();
-  }, []);
+  }, [router]);
 
   const logout = async () => {
     await AsyncStorage.removeItem("token");
@@ -35,7 +52,8 @@ export default function Home() {
     router.replace("/login");
   };
 
-  if (!user) return <Text>Loading...</Text>;
+  if (loading) return <Text>Loading...</Text>;
+  if (error) return <Text style={{ color: "red" }}>Error: {error}</Text>;
 
   return (
     <View style={{ padding: 20 }}>
