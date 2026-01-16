@@ -1,4 +1,3 @@
-export const API_URL =
-  typeof window !== "undefined"
-    ? "https://uhv-connectbackend-zpkb.onrender.com/api"
-    : "https://uhv-connectbackend-zpkb.onrender.com/api";
+export const API_URL = 
+  process.env.EXPO_PUBLIC_API_URL || 
+  "https://uhv-connectbackend-zpkb.onrender.com/api";
